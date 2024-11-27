@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Four - Classic Board Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+
+        :root {
+            --wood-dark: #6b4423;
+            --wood-medium: #8b4513;
+            --wood-light: #d2691e;
+            --board-background: #f4e1d2;
+            --text-color: #3e2723;
+            --piece-red: #b22222;
+            --piece-yellow: #daa520;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--board-background);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        #game-container {
+            background-color: var(--wood-dark);
+            border-radius: 15px;
+            box-shadow: 
+                0 15px 30px rgba(0,0,0,0.3),
+                inset 0 0 50px rgba(0,0,0,0.2);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        #game-board-frame {
+            background-color: var(--wood-medium);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 
+                inset 0 0 20px rgba(0,0,0,0.3),
+                0 5px 15px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            background-color: var(--wood-light);
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 
+                inset 0 0 10px rgba(0,0,0,0.3);
+        }
+
+        .cell {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            position: relative;
+            border: 2px solid rgba(0,0,0,0.1);
+        }
+
+        .cell::before {
+            content: '';
+            position: absolute;
+            top: 25%;
+            left: 25%;
+            width: 50%;
+            height: 50%;
+            background: radial-gradient(circle at top left, 
+                rgba(255,255,255,0.3), 
+                rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            opacity: 0.7;
+        }
+
+        .cell:hover {
+            transform: scale(1.05);
+        }
+
+        .cell.red {
+            background-color: var(--piece-red);
+            box-shadow: 
+                0 0 10px rgba(178,34,34,0.5),
+                inset 0 0 15px rgba(255,255,255,0.3);
+        }
+
+        .cell.yellow {
+            background-color: var(--piece-yellow);
+            box-shadow: 
+                0 0 10px rgba(218,165,32,0.5),
+                inset 0 0 15px rgba(255,255,255,0.3);
+        }
+
+        #status {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--board-background);
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        #reset-btn {
+            background-color: var(--board-background);
+            color: var(--wood-dark);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 4px 6px rgba(0,0,0,0.1),
+                inset 0 -3px 0 rgba(0,0,0,0.2);
+        }
+
+        #reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 6px 8px rgba(0,0,0,0.2),
+                inset 0 -3px 0 rgba(0,0,0,0.3);
+        }
+
+        #winner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #winner-popup {
+            background-color: var(--wood-medium);
+            color: var(--board-background);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 
+                0 20px 50px rgba(0,0,0,0.5),
+                inset 0 0 30px rgba(0,0,0,0.2);
+            transform: scale(0.7);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #winner-popup.show {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            top: -10%;
+            opacity: 0;
+            z-index: 999;
+            border-radius: 50%;
+            animation: confetti 5s ease-in-out infinite;
+        }
+
+        @keyframes confetti {
+            0% {
+                opacity: 1;
+                transform: translateY(0) rotate(0deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .cell {
+                width: 45px;
+                height: 45px;
+            }
+            #game-container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="status">Player Red's Turn</div>
+        <div id="game-board-frame">
+            <div id="game-board"></div>
+        </div>
+        <button id="reset-btn">Reset Game</button>
+    </div>
+
+    <div id="winner-overlay">
+        <div id="winner-popup">
+            <h1 id="winner-message" style="margin-bottom: 20px; font-size: 2rem;">Player Wins!</h1>
+            <button id="play-again-btn" style="
+                background-color: var(--board-background);
+                color: var(--wood-dark);
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 
+                    0 4px 6px rgba(0,0,0,0.1),
+                    inset 0 -3px 0 rgba(0,0,0,0.2);
+            ">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const ROWS = 6;
+        const COLS = 7;
+        let board = [];
+        let currentPlayer = 'red';
+        let gameActive = true;
+
+        const statusDisplay = document.getElementById('status');
+        const gameBoard = document.getElementById('game-board');
+        const resetButton = document.getElementById('reset-btn');
+        const winnerOverlay = document.getElementById('winner-overlay');
+        const winnerPopup = document.getElementById('winner-popup');
+        const winnerMessage = document.getElementById('winner-message');
+        const playAgainBtn = document.getElementById('play-again-btn');
+
+        function initializeBoard() {
+            board = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+            gameBoard.innerHTML = '';
+            
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener('click', handleCellClick);
+                    gameBoard.appendChild(cell);
+                }
+            }
+            
+            currentPlayer = 'red';
+            gameActive = true;
+            statusDisplay.textContent = "Player Red's Turn";
+            hideWinnerOverlay();
+        }
+
+        function handleCellClick(event) {
+            if (!gameActive) return;
+
+            const col = parseInt(event.target.dataset.col);
+            const row = dropPiece(col);
+
+            if (row !== -1) {
+                const cells = document.querySelectorAll('.cell');
+                cells[row * COLS + col].classList.add(currentPlayer);
+                board[row][col] = currentPlayer;
+
+                if (checkWin(row, col)) {
+                    gameActive = false;
+                    showWinnerOverlay(currentPlayer);
+                } else {
+                    currentPlayer = currentPlayer === 'red' ? 'yellow' : 'red';
+                    statusDisplay.textContent = `Player ${currentPlayer.toUpperCase()}'s Turn`;
+                }
+            }
+        }
+
+        function dropPiece(col) {
+            for (let row = ROWS - 1; row >= 0; row--) {
+                if (board[row][col] === null) {
+                    return row;
+                }
+            }
+            return -1;
+        }
+
+        function checkWin(row, col) {
+            const player = board[row][col];
+            
+            // Check horizontal
+            let horizontalCount = 0;
+            for (let c = 0; c < COLS; c++) {
+                horizontalCount = (board[row][c] === player) ? horizontalCount + 1 : 0;
+                if (horizontalCount === 4) return true;
+            }
+
+            // Check vertical
+            let verticalCount = 0;
+            for (let r = 0; r < ROWS; r++) {
+                verticalCount = (board[r][col] === player) ? verticalCount + 1 : 0;
+                if (verticalCount === 4) return true;
+            }
+
+            // Check diagonal (top-left to bottom-right)
+            let diag1Count = 0;
+            let startRow = row, startCol = col;
+            while (startRow > 0 && startCol > 0) {
+                startRow--;
+                startCol--;
+            }
+            for (let r = startRow, c = startCol; r < ROWS && c < COLS; r++, c++) {
+                diag1Count = (board[r][c] === player) ? diag1Count + 1 : 0;
+                if (diag1Count === 4) return true;
+            }
+
+            // Check diagonal (top-right to bottom-left)
+            let diag2Count = 0;
+            startRow = row;
+            startCol = col;
+            while (startRow > 0 && startCol < COLS - 1) {
+                startRow--;
+                startCol++;
+            }
+            for (let r = startRow, c = startCol; r < ROWS && c >= 0; r++, c--) {
+                diag2Count = (board[r][c] === player) ? diag2Count + 1 : 0;
+                if (diag2Count === 4) return true;
+            }
+
+            return false;
+        }
+
+        function showWinnerOverlay(winner) {
+            winnerMessage.textContent = `Player ${winner.toUpperCase()} Wins!`;
+            winnerOverlay.style.display = 'flex';
+            setTimeout(() => {
+                winnerPopup.classList.add('show');
+            }, 50);
+            createConfetti();
+        }
+
+        function hideWinnerOverlay() {
+            winnerOverlay.style.display = 'none';
+            winnerPopup.classList.remove('show');
+        }
+
+        function createConfetti() {
+            const colors = ['#b22222', '#daa520', '#8b4513', '#d2691e', '#a0522d'];
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = `${Math.random() * 5}s`;
+                document.body.appendChild(confetti);
+            }
+
+            setTimeout(() => {
+                document.querySelectorAll('.confetti').forEach(el => el.remove());
+            }, 6000);
+        }
+
+        resetButton.addEventListener('click', initializeBoard);
+        playAgainBtn.addEventListener('click', initializeBoard);
+        initializeBoard();
+    </script>
+</body>
+</html>
